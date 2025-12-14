@@ -1,0 +1,25 @@
+{
+  "name": "✝️📖Sagradas Escrituras📖🧎",
+  "short_name": "Bíblia IASD",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3e2723",
+  "theme_color": "#3e2723",
+  "orientation": "portrait",
+  "description": "Estudo Bíblico, Espírito de Profecia",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

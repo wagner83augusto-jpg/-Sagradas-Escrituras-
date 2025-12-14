@@ -1,0 +1,70 @@
+{
+  "name": "Bíblia Sagrada Adventista",
+  "short_name": "Bíblia IASD",
+  "description": "Estudo Bíblico Completo: Texto offline, Espírito de Profecia, Hinário, Lição e Rádios. Ferramenta essencial para adventistas.",
+  "start_url": "./index.html",
+  "id": "biblia-iasd-app",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a100e",
+  "theme_color": "#3e2723",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://images.unsplash.com/photo-1507434965515-61970f2bd7c6?q=80&w=1080&h=1920&auto=format&fit=crop",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Leitura Bíblica no Celular"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=1280&h=720&auto=format&fit=crop",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Estudo Bíblico no Desktop"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ler Bíblia",
+      "url": "./index.html#bible",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Rádios",
+      "url": "./index.html#radios",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/3004/3004458.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "categories": ["books", "education", "lifestyle"]
+}
