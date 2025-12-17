@@ -22,7 +22,6 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
   // Admin Configs (Read Only in this view)
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminSoundEnabled, setAdminSoundEnabled] = useState(true); 
-  const [notification, setNotification] = useState<string | null>(null);
   
   // Recording & Dictation State
   const [isRecording, setIsRecording] = useState(false);
@@ -39,7 +38,6 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingInterval = useRef<number | null>(null);
   const loginSimulationInterval = useRef<number | null>(null);
-  const notificationTimeoutRef = useRef<number | null>(null);
 
   // Carregar dados iniciais e configurações
   useEffect(() => {
@@ -72,12 +70,11 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
       if (pollingInterval.current) clearInterval(pollingInterval.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (loginSimulationInterval.current) clearInterval(loginSimulationInterval.current);
-      if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
       if (recognitionRef.current) recognitionRef.current.stop();
     };
   }, []);
 
-  // Simulação de Login (Apenas se Admin Mode estiver ativo)
+  // Simulação de Login (Silencioso se configurado)
   useEffect(() => {
     if (isAdminMode) {
         if ("Notification" in window && Notification.permission === "default") {
@@ -86,12 +83,7 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
 
         loginSimulationInterval.current = window.setInterval(() => {
             if (Math.random() > 0.6) {
-                const mockNames = ["Irmão Lucas", "Sara M.", "Davi Silva", "Raquel G.", "Pr. Antônio", "Jovem Daniel", "Irmã Rute", "Ester F."];
-                const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
-                
-                const alertMessage = `${randomName} entrou no chat.`;
-                showAdminNotification(alertMessage);
-                
+               // Apenas som, sem notificação visual no cabeçário para manter interface limpa
                 if (adminSoundEnabled) {
                     playNotificationSound(); 
                 }
@@ -107,14 +99,6 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
         if (loginSimulationInterval.current) clearInterval(loginSimulationInterval.current);
     };
   }, [isAdminMode, adminSoundEnabled]);
-
-  const showAdminNotification = (text: string) => {
-      setNotification(text);
-      if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-      notificationTimeoutRef.current = window.setTimeout(() => {
-          setNotification(null);
-      }, 4000);
-  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -282,17 +266,6 @@ const BibleChat: React.FC<BibleChatProps> = ({ onBack }) => {
       <div role="status" aria-live="polite" className="sr-only">
         {a11yAnnouncement}
       </div>
-
-      {/* Admin Notification Toast */}
-      {notification && (
-          <div className="fixed top-20 right-4 left-4 md:left-auto md:w-80 z-50 bg-[#3e2723] border-l-4 border-[#bf953f] text-[#fcf6ba] p-4 rounded shadow-2xl animate-in slide-in-from-top-4 fade-in duration-300 flex items-start gap-3">
-              <BellRing className="text-[#bf953f] flex-shrink-0 animate-bounce" size={20} />
-              <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#bf953f]">Alerta Administrativo</h4>
-                  <p className="text-sm font-serif leading-tight mt-1">{notification}</p>
-              </div>
-          </div>
-      )}
 
       {/* Header - Left Spacer for Global X */}
       <div className="bg-[#1a100e]/95 backdrop-blur-md text-[#fcf6ba] p-4 flex items-center justify-between shadow-lg sticky top-0 z-10 border-b border-[#3e2723]">

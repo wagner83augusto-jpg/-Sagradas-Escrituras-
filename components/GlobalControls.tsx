@@ -5,7 +5,7 @@ import { BIBLE_BOOKS } from '../constants';
 
 const COMMANDS_HELP_TEXT = "Você pode dizer: 'Menu' para ouvir as opções, 'Abrir Bíblia', 'Mateus 4 8' para ir a um versículo, 'Abrir Cursos', 'Abrir Rádios' ou 'Abrir Comunidade'.";
 
-const MENU_READING_TEXT = "Menu Principal. Opção 1: Bíblia Sagrada. Opção 2: Reflexão Diária. Opção 3: Cursos Teológicos. Opção 4: Quiz Bíblico. Opção 5: Livros Apócrifos. Opção 6: Dicionário. Opção 7: Assistente IA. Opção 8: Rádios Online. Opção 9: Comunidade.";
+const MENU_READING_TEXT = "Menu Principal. Opção 1: Bíblia Sagrada. Opção 2: Biblioteca. Opção 3: Inspiração do Dia. Opção 4: Hinário e Louvor. Opção 5: Cursos Teológicos. Opção 6: Quiz Bíblico. Opção 7: Dicionário. Opção 8: Assistente da Bíblia. Opção 9: Comunidade. Opção 10: Rádios Online. Opção 11: Configurações.";
 
 const GlobalControls: React.FC = () => {
     const [isListening, setIsListening] = useState(false);
@@ -52,6 +52,7 @@ const GlobalControls: React.FC = () => {
         else if (cmd.includes('dicionário')) window.location.hash = 'dictionary';
         else if (cmd.includes('apócrifo')) window.location.hash = 'apocrypha';
         else if (cmd.includes('assistente')) window.location.hash = 'assistant';
+        else if (cmd.includes('biblioteca')) window.location.hash = 'library';
         
         // 4. Navegação Bíblica Inteligente (Ex: "Mateus 4 8" ou "Abrir Mateus capítulo 4")
         else {
@@ -133,8 +134,8 @@ const GlobalControls: React.FC = () => {
             <button
                 onClick={() => { playClickSound(); window.location.hash = 'assistant'; }}
                 className="w-10 h-10 rounded-full bg-[#1a100e]/80 backdrop-blur-md border border-[#bf953f] flex items-center justify-center text-[#bf953f] shadow-lg hover:bg-[#3e2723] transition-all focus:outline-none focus:ring-2 focus:ring-[#fcf6ba]"
-                aria-label="Abrir Assistente de Inteligência Artificial"
-                title="Assistente IA"
+                aria-label="Abrir Assistente da Bíblia (IA)"
+                title="Assistente da Bíblia"
             >
                 <Sparkles size={20} />
             </button>

@@ -7,12 +7,12 @@ interface Props {
   onBack: () => void;
 }
 
-// URLs de Áudio Estáveis (CDNs públicos)
+// URLs de Áudio Estáveis (Mixkit/CDN Assets)
 const SOUNDS = {
-    correct: 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c153e1.mp3', // Sino de sucesso
-    wrong: 'https://cdn.pixabay.com/audio/2021/08/09/audio_88447e769f.mp3',   // Erro grave
-    tick: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3',    // Tique de relógio curto
-    timeout: 'https://cdn.pixabay.com/audio/2021/08/04/audio_c6ccf3232f.mp3'  // Som de falha/tempo esgotado
+    correct: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3', // Win Chime
+    wrong: 'https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3',   // Fail Tone
+    tick: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',    // Click/Tick
+    timeout: 'https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3'     // Alarm
 };
 
 const BibleQuiz: React.FC<Props> = ({ onBack }) => {
@@ -21,18 +21,25 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0); 
-  const [lives, setLives] = useState(7); // Alterado para 7 vidas
+  const [lives, setLives] = useState(7); // 7 vidas
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | 'timeout' | null>(null);
   
-  // Timer State
-  const [timeLeft, setTimeLeft] = useState(60);
+  // Timer State - Aumentado para 180 segundos (3 minutos)
+  const [timeLeft, setTimeLeft] = useState(180);
   const timerRef = useRef<number | null>(null);
 
-  // Audio Refs para performance (evitar lag)
-  const audioContextRef = useRef<AudioContext | null>(null);
+  // Audio Refs para performance
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
   useEffect(() => {
+      // Pré-carregar áudios
+      Object.keys(SOUNDS).forEach(key => {
+          const audio = new Audio(SOUNDS[key as keyof typeof SOUNDS]);
+          audio.preload = 'auto';
+          audioRefs.current[key] = audio;
+      });
+
       return () => stopTimer();
   }, []);
 
@@ -45,17 +52,23 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
       }
   }, [gameState, currentQuestion, loading, feedback]);
 
+  const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const startTimer = () => {
       stopTimer();
-      setTimeLeft(60); // 1 Minuto
+      setTimeLeft(180); // 3 Minutos
       
       timerRef.current = window.setInterval(() => {
           setTimeLeft((prev) => {
               const newValue = prev - 1;
               
-              // Efeito sonoro de contagem regressiva (5, 4, 3, 2, 1)
+              // Efeito sonoro de contagem regressiva (últimos 5 segundos)
               if (newValue <= 5 && newValue > 0) {
-                  playSound('tick', 0.5);
+                  playSound('tick', 0.8);
               }
 
               if (newValue <= 0) {
@@ -83,7 +96,7 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
   const loadQuestion = async () => {
       setLoading(true);
       setFeedback(null);
-      setTimeLeft(60); // Reset timer visualmente antes de carregar
+      setTimeLeft(180); // Reset timer visualmente antes de carregar
       try {
           const q = await fetchBibleQuizQuestion(difficulty);
           setCurrentQuestion(q);
@@ -106,10 +119,24 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
 
   const playSound = (type: keyof typeof SOUNDS, volume = 1.0) => {
       try {
-          const audio = new Audio(SOUNDS[type]);
+          // Tenta usar o ref pré-carregado ou cria um novo se falhar
+          let audio = audioRefs.current[type];
+          if (!audio) {
+              audio = new Audio(SOUNDS[type]);
+          }
+          
           audio.volume = volume;
-          audio.play().catch(e => console.log("Audio play prevented", e));
-      } catch (e) {}
+          audio.currentTime = 0; // Reinicia o áudio
+          
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                  console.log("Reprodução de áudio bloqueada (interação necessária):", error);
+              });
+          }
+      } catch (e) {
+          console.error("Erro ao tocar som:", e);
+      }
   };
 
   const handleMistake = (type: 'wrong' | 'timeout') => {
@@ -132,7 +159,7 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
       if (optionIndex === currentQuestion.correctOptionIndex) {
           playSound('correct');
           const basePoints = difficulty === 'easy' ? 10 : difficulty === 'medium' ? 20 : 30;
-          const timeBonus = Math.floor(timeLeft / 2); // Bônus por rapidez
+          const timeBonus = Math.floor(timeLeft / 10); // Bônus ajustado para o tempo maior
           const streakBonus = streak * 5;
           
           setScore(s => s + basePoints + streakBonus + timeBonus);
@@ -211,7 +238,7 @@ const BibleQuiz: React.FC<Props> = ({ onBack }) => {
                         {/* Timer */}
                         <div className={`flex items-center gap-2 font-mono font-bold text-lg ${timeLeft <= 5 ? 'text-red-500 animate-pulse scale-110' : 'text-[#fcf6ba]'}`}>
                              <Clock size={18} />
-                             {timeLeft}s
+                             {formatTime(timeLeft)}
                         </div>
                     </div>
 

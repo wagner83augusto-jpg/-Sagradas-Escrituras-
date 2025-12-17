@@ -9,8 +9,10 @@ import BibleChat from './components/BibleChat';
 import TheologicalCourses from './components/TheologicalCourses';
 import BibleQuiz from './components/BibleQuiz';
 import ApocryphaReader from './components/ApocryphaReader';
+import SettingsPage from './components/SettingsPage';
+import AdminPage from './components/AdminPage';
 import { RadioStation } from './types';
-import { Pause, Play, X, Radio } from 'lucide-react';
+import { Pause, Play, X, Radio, Loader2 } from 'lucide-react';
 import { playClickSound } from './constants';
 
 const App: React.FC = () => {
@@ -20,63 +22,101 @@ const App: React.FC = () => {
   // -- GLOBAL RADIO STATE --
   const [currentStation, setCurrentStation] = useState<RadioStation | null>(null);
   const [isRadioPlaying, setIsRadioPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Inicializa o objeto de áudio globalmente
     if (!audioRef.current) {
         audioRef.current = new Audio();
-        audioRef.current.crossOrigin = "anonymous";
-        
-        // Setup Media Session para controle na tela de bloqueio
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('play', () => {
-                audioRef.current?.play();
-                setIsRadioPlaying(true);
-            });
-            navigator.mediaSession.setActionHandler('pause', () => {
-                audioRef.current?.pause();
-                setIsRadioPlaying(false);
-            });
-        }
+        // REMOVIDO: crossOrigin = "anonymous" bloqueia rádios que não enviam cabeçalhos CORS
+        // audioRef.current.crossOrigin = "anonymous"; 
+        audioRef.current.preload = "none";
     }
 
-    // Configura listeners de erro e fim
-    audioRef.current.onended = () => setIsRadioPlaying(false);
-    audioRef.current.onerror = () => setIsRadioPlaying(false);
+    const audio = audioRef.current;
 
+    // Event Listeners para sincronizar estado real do áudio
+    const onPlay = () => { setIsRadioPlaying(true); setIsBuffering(false); };
+    const onPause = () => setIsRadioPlaying(false);
+    const onWaiting = () => setIsBuffering(true); // Buffering/Carregando
+    const onPlaying = () => { setIsRadioPlaying(true); setIsBuffering(false); };
+    const onError = (e: any) => {
+        console.error("Erro no stream de áudio:", e);
+        setIsRadioPlaying(false);
+        setIsBuffering(false);
+    };
+    const onEnded = () => setIsRadioPlaying(false);
+
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
+    audio.addEventListener('error', onError);
+    audio.addEventListener('ended', onEnded);
+
+    // Setup Media Session para controle na tela de bloqueio e barra de notificações
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', () => {
+            audio.play().catch(() => {});
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            audio.pause();
+        });
+        navigator.mediaSession.setActionHandler('stop', () => {
+            handleStopRadio();
+        });
+    }
+
+    return () => {
+        audio.removeEventListener('play', onPlay);
+        audio.removeEventListener('pause', onPause);
+        audio.removeEventListener('waiting', onWaiting);
+        audio.removeEventListener('playing', onPlaying);
+        audio.removeEventListener('error', onError);
+        audio.removeEventListener('ended', onEnded);
+    };
   }, []);
 
   const handlePlayStation = (station: RadioStation) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
       if (currentStation?.id === station.id) {
-          // Toggle
+          // Toggle Play/Pause na mesma estação
           if (isRadioPlaying) {
-              audioRef.current?.pause();
-              setIsRadioPlaying(false);
+              audio.pause();
           } else {
-              audioRef.current?.play();
-              setIsRadioPlaying(true);
-          }
-      } else {
-          // New Station
-          if (audioRef.current) {
-              audioRef.current.src = station.url;
-              audioRef.current.play().then(() => {
-                  setIsRadioPlaying(true);
-                  // Update Lock Screen Metadata
-                  if ('mediaSession' in navigator) {
-                      navigator.mediaSession.metadata = new MediaMetadata({
-                          title: station.name,
-                          artist: station.genre,
-                          album: 'Rádio Bíblia IASD',
-                          artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png', sizes: '512x512', type: 'image/png' }]
-                      });
-                  }
-              }).catch(e => {
-                  console.error("Erro ao tocar rádio:", e);
+              audio.play().catch(e => {
+                  console.error("Erro ao retomar rádio:", e);
                   setIsRadioPlaying(false);
               });
           }
+      } else {
+          // Nova Estação
+          setIsBuffering(true);
+          setIsRadioPlaying(false); // Reseta visualmente até começar
+          
+          audio.src = station.url;
+          audio.load(); // Força o carregamento do novo stream
+          
+          audio.play().then(() => {
+              // Sucesso no play
+              if ('mediaSession' in navigator) {
+                  navigator.mediaSession.metadata = new MediaMetadata({
+                      title: station.name,
+                      artist: station.genre,
+                      album: 'Rádio Bíblia IASD',
+                      artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png', sizes: '512x512', type: 'image/png' }]
+                  });
+              }
+          }).catch(e => {
+              console.error("Erro ao tocar rádio (Autoplay ou Erro de Rede):", e);
+              setIsRadioPlaying(false);
+              setIsBuffering(false);
+              alert("Não foi possível conectar a esta rádio no momento. Tente outra estação.");
+          });
+          
           setCurrentStation(station);
       }
   };
@@ -84,9 +124,10 @@ const App: React.FC = () => {
   const handleStopRadio = () => {
       if (audioRef.current) {
           audioRef.current.pause();
-          audioRef.current.src = "";
+          audioRef.current.src = ""; // Libera conexão
       }
       setIsRadioPlaying(false);
+      setIsBuffering(false);
       setCurrentStation(null);
   };
 
@@ -155,6 +196,11 @@ const App: React.FC = () => {
       return <BibleReader onBackToMenu={() => window.location.hash = 'menu'} />;
     }
 
+    // NOVA ROTA PARA BIBLIOTECA
+    if (currentHash === 'library' || currentHash.startsWith('library/')) {
+        return <BibleReader onBackToMenu={() => window.location.hash = 'menu'} />;
+    }
+
     if (currentHash === 'apocrypha' || currentHash.startsWith('apocrypha/')) {
       return <ApocryphaReader onBackToMenu={() => window.location.hash = 'menu'} />;
     }
@@ -187,6 +233,15 @@ const App: React.FC = () => {
     if (currentHash === 'quiz') {
       return <BibleQuiz onBack={() => window.location.hash = 'menu'} />;
     }
+    
+    // --- NOVAS ROTAS ---
+    if (currentHash === 'settings') {
+      return <SettingsPage onBack={() => window.location.hash = 'menu'} />;
+    }
+    
+    if (currentHash === 'admin') {
+      return <AdminPage onBack={() => window.location.hash = 'menu'} />;
+    }
 
     return <MainMenu onNavigate={(view) => window.location.hash = view} />;
   };
@@ -218,11 +273,15 @@ const App: React.FC = () => {
               <div className="max-w-2xl mx-auto flex items-center justify-between">
                   <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-10 h-10 bg-[#bf953f] rounded-full flex items-center justify-center text-[#2d1b18]">
-                          <Radio size={20} className={isRadioPlaying ? 'animate-pulse' : ''} aria-hidden="true" />
+                          {isBuffering ? (
+                              <Loader2 size={20} className="animate-spin" />
+                          ) : (
+                              <Radio size={20} className={isRadioPlaying ? 'animate-pulse' : ''} aria-hidden="true" />
+                          )}
                       </div>
                       <div className="flex-1 min-w-0">
                           <p className="text-[#fcf6ba] text-sm font-bold truncate">{currentStation.name}</p>
-                          <p className="text-[#a1887f] text-xs truncate">{currentStation.genre}</p>
+                          <p className="text-[#a1887f] text-xs truncate">{isBuffering ? 'Conectando...' : currentStation.genre}</p>
                       </div>
                   </div>
                   <div className="flex items-center gap-3">

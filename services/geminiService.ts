@@ -10,13 +10,44 @@ const VERSION_NAMES: Record<string, string> = {
   'NTLH': 'Nova Tradução na Linguagem de Hoje'
 };
 
-export const fetchChapterContent = async (book: string, chapter: number, version: string = 'ACF'): Promise<ChapterData> => {
+// Modificada para aceitar contextos de novos autores
+export const fetchChapterContent = async (book: string, chapter: number, version: string = 'ACF', context: string = 'bible'): Promise<ChapterData> => {
   const model = "gemini-2.5-flash";
   const versionName = VERSION_NAMES[version] || 'Almeida Corrigida Fiel';
   
-  const prompt = `Gere o texto bíblico completo para o livro de ${book}, capítulo ${chapter} na versão ${versionName} (português).
-  Retorne APENAS um JSON válido.
-  Não inclua markdown formatting (\`\`\`json).`;
+  let prompt = "";
+  
+  if (context === 'bible') {
+      prompt = `Gere o texto bíblico completo para o livro de ${book}, capítulo ${chapter} na versão ${versionName} (português).
+      Retorne APENAS um JSON válido.`;
+  } else if (context === 'apocrypha') {
+      prompt = `Gere o texto completo do livro apócrifo de ${book}, capítulo ${chapter} em português. 
+      Retorne APENAS um JSON válido.`;
+  } else if (context === 'ellen') {
+      prompt = `Gere o conteúdo do livro de Ellen G. White: "${book}", capítulo ou seção número ${chapter}.
+      Se o livro não tiver capítulos numerados dessa forma, gere o texto da ${chapter}ª seção principal.
+      Mantenha a fidelidade aos escritos originais traduzidos para português.
+      Retorne APENAS um JSON válido no formato de versículos (parágrafos como versos).`;
+  } else if (context === 'rodrigo') {
+      prompt = `Gere um resumo detalhado e educativo ou o conteúdo do livro do Dr. Rodrigo Silva: "${book}", capítulo ${chapter}.
+      Foque em arqueologia bíblica e contexto histórico.
+      Retorne APENAS um JSON válido no formato de versículos (tópicos como versos).`;
+  } else if (context === 'michelson') {
+      prompt = `Gere o conteúdo ou resumo detalhado do livro de Michelson Borges: "${book}", capítulo ${chapter}.
+      Foque em criacionismo e apologética. Retorne JSON no formato de versículos.`;
+  } else if (context === 'bunyan') {
+      prompt = `Gere o texto do clássico cristão de John Bunyan: "${book}", capítulo/seção ${chapter}.
+      O estilo deve ser alegórico e devocional clássico.
+      Retorne JSON no formato de versículos.`;
+  } else if (context === 'ferguson') {
+      prompt = `Gere o texto de estudo teológico de Sinclair Ferguson: "${book}", capítulo ${chapter}.
+      Foque na Pneumatologia e Teologia Reformada.
+      Retorne JSON no formato de versículos.`;
+  } else if (context === 'finney') {
+      prompt = `Gere o texto teológico de Charles Finney: "${book}", capítulo ${chapter}.
+      Foque em avivamento e teologia sistemática.
+      Retorne JSON no formato de versículos.`;
+  }
 
   try {
     const response = await ai.models.generateContent({
@@ -55,46 +86,8 @@ export const fetchChapterContent = async (book: string, chapter: number, version
 };
 
 export const fetchApocryphaContent = async (book: string, chapter: number): Promise<ChapterData> => {
-  const model = "gemini-2.5-flash";
-  
-  const prompt = `Gere o texto completo do livro apócrifo (deuterocanônico/pseudepígrafo) de ${book}, capítulo ${chapter} em português (tradução clássica ou comum para estudos históricos).
-  Retorne APENAS um JSON válido.
-  Se o capítulo não existir, retorne vazio.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            book: { type: Type.STRING },
-            chapter: { type: Type.NUMBER },
-            verses: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  verse: { type: Type.NUMBER },
-                  text: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("No data returned");
-    
-    return JSON.parse(text) as ChapterData;
-  } catch (error) {
-    console.error("Error fetching apocrypha chapter:", error);
-    throw error;
-  }
+    // Wrapper legado
+    return fetchChapterContent(book, chapter, 'ACF', 'apocrypha');
 };
 
 export const searchBible = async (query: string, version: string = 'ACF'): Promise<SearchResult[]> => {
@@ -289,10 +282,29 @@ export const fetchCourseSyllabus = async (topic: string): Promise<CourseModule[]
     }
 };
 
-export const fetchCourseContent = async (topic: string, moduleTitle: string): Promise<CourseContent> => {
-    const model = "gemini-2.5-flash";
-    const prompt = `Escreva o conteúdo educacional completo para o módulo "${moduleTitle}" do curso sobre "${topic}".
-    Seja profundo, teológico e sistemático. Use Markdown para formatar (negrito, listas).`;
+export const fetchCourseContent = async (context: string, moduleTitle: string): Promise<CourseContent> => {
+    const model = "gemini-3-pro-preview"; // Uso do modelo PRO para maior profundidade teológica
+    
+    const prompt = `Atue como um Professor Doutor em Teologia e Arqueologia Bíblica.
+    Crie o conteúdo completo de uma aula para o módulo: "${moduleTitle}".
+    
+    Contexto do Curso: "${context}".
+    
+    Diretrizes da Aula:
+    1. **Profundidade Acadêmica:** Use termos técnicos (exegese, hermenêutica) quando necessário, explicando-os.
+    2. **Idiomas Originais:** Cite palavras-chave em Hebraico ou Grego com seus significados originais para enriquecer o estudo.
+    3. **Fundamentação Bíblica:** Use múltiplas referências bíblicas.
+    4. **Estrutura Didática:** Divida em: Introdução, Desenvolvimento (3 tópicos principais), Aplicação Prática e Conclusão.
+    5. **Referências:** Se aplicável ao contexto Adventista, cite Ellen G. White.
+    
+    **IMPORTANTE: ILUSTRAÇÕES VISUAIS**
+    Para tornar a aula didática, inclua 2 ou 3 **imagens** no meio do texto usando a sintaxe Markdown padrão: \`![Descrição da Imagem](PROMPT_EM_INGLES_PARA_GERAR_IMAGEM)\`.
+    
+    *   No lugar da URL, coloque um **prompt descritivo em inglês** que descreva exatamente o que deve aparecer na imagem (ex: "Ancient Map of Jerusalem first century", "Illustration of the Ark of the Covenant golden texture", "Archaeological ruins of Jericho").
+    *   O frontend usará esse prompt para gerar a imagem ilustrativa.
+    *   Distribua as imagens ao longo do texto onde fizer sentido (ex: um mapa na introdução geográfica, um artefato na arqueologia).
+    
+    Formate a resposta em Markdown rico (negrito, itálico, listas, citações).`;
 
     try {
         const response = await ai.models.generateContent({
@@ -312,15 +324,18 @@ export const fetchCourseContent = async (topic: string, moduleTitle: string): Pr
         return JSON.parse(response.text || "{}");
     } catch (e) {
         console.error(e);
-        return { title: moduleTitle, content: "Erro ao carregar conteúdo." };
+        return { title: moduleTitle, content: "## Erro na Geração\nNão foi possível recuperar o conteúdo da nuvem teológica. Por favor, tente novamente em instantes." };
     }
 };
 
 export const fetchCourseQuiz = async (content: string): Promise<QuizQuestion[]> => {
     const model = "gemini-2.5-flash";
-    const prompt = `Com base no seguinte conteúdo, crie 3 perguntas de múltipla escolha difíceis para testar o aluno.
-    Conteúdo: ${content.substring(0, 3000)}...
-    Retorne JSON.`;
+    const prompt = `Com base no seguinte conteúdo de aula teológica, crie 5 perguntas de múltipla escolha de nível acadêmico/universitário.
+    As perguntas devem testar a compreensão profunda, não apenas memorização.
+    
+    Conteúdo da Aula: ${content.substring(0, 8000)}...
+    
+    Retorne JSON válido com 5 questões.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -336,7 +351,7 @@ export const fetchCourseQuiz = async (content: string): Promise<QuizQuestion[]> 
                             question: { type: Type.STRING },
                             options: { type: Type.ARRAY, items: { type: Type.STRING } },
                             correctOptionIndex: { type: Type.INTEGER },
-                            explanation: { type: Type.STRING }
+                            explanation: { type: Type.STRING, description: "Explicação teológica detalhada do porquê a resposta está correta." }
                         }
                     }
                 }

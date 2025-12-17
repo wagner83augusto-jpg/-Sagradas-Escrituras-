@@ -31,17 +31,38 @@
         background-color: #1a100e;
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;
-        user-select: none;
+        user-select: none; /* Previne seleção global */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
       }
       .font-title {
         font-family: 'Cinzel', serif;
       }
       .prose, .select-text {
-        user-select: text;
+        user-select: none; /* Força não seleção em textos */
       }
       button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
         outline: 3px solid #bf953f;
         outline-offset: 2px;
+      }
+      
+      /* Segurança de Impressão e Proteção Visual */
+      @media print {
+        body {
+          display: none !important;
+        }
+      }
+      
+      .secure-content {
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      
+      .blur-content {
+        filter: blur(20px);
+        pointer-events: none;
       }
     </style>
   <script type="importmap">
